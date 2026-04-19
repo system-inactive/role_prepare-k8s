@@ -1,0 +1,20 @@
+---
+- name: Download k8s repo key
+  ansible.builtin.get_url:
+    url: "{{ k8s_repo_key_url }}"
+    dest: "{{ k8s_repo_key_dest_path }}"
+    mode: 0644
+  register: result_k8s_key_download
+
+- name: Add k8s repo
+  ansible.builtin.apt_repository:
+    repo: "{{ k8s_deb_repo }}"
+    filename: k8s.list
+    state: present
+    update_cache: yes
+
+- name: Install k8s packeges from repo
+  ansible.builtin.apt:
+    pkg: "{{ k8s_packages }}"
+    update_cache: yes
+    state: present

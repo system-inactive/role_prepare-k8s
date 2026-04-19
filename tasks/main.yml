@@ -1,0 +1,10 @@
+---
+- name: Include tasks from dependencies.yml
+  ansible.builtin.include_tasks: dependencies.yml
+  tags: dependencies
+- name: Include tasks from containerd.yml
+  ansible.builtin.include_tasks: containerd.yml
+  tags: containerd
+- name: Include tasks from k8s-install.yml
+  ansible.builtin.include_tasks: k8s-install.yml
+  tags: k8s-install

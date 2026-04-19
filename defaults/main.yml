@@ -1,0 +1,67 @@
+#SPDX-License-Identifier: MIT-0
+---
+k8s_distro_packages_cp:
+  - curl
+  - wget
+  - gnupg
+  - sudo
+  - iptables
+  - tmux
+  - keepalived
+  - haproxy
+  - mc
+
+k8s_kernel_modules:
+  - overlay
+  - br_netfilter
+
+k8s_sysctl_file: /etc/sysctl.d/100-k8s.conf
+k8s_sysctl_file_permissions: "0644"
+
+k8s_sysctl_options:
+  - { option: net.bridge.bridge-nf-call-ip6tables, value: 1 }
+  - { option: net.bridge.bridge-nf-call-iptables, value: 1 }
+  - { option: net.ipv4.ip_forward, value: 1 }
+
+k8s_modprobe_path: /usr/sbin/modprobe
+k8s_sysctl_path: /usr/sbin/sysctl
+k8s_modload_d_path: /etc/modules-load.d/100-k8s.conf
+
+k8s_version: 1.34
+k8s_repo_key_url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key"
+k8s_repo_key_dest_path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+k8s_deb_repo: "deb [signed-by={{ k8s_repo_key_dest_path }}] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /"
+k8s_packages:
+  - kubelet
+  - kubeadm
+  - kubectl
+
+kubeadm_path: /usr/bin/kubeadm
+kubeadm_init_params:
+  - --control-plane-endpoint 127.0.0.1:6443
+  - --upload-certs
+  - --pod-network-cidr=10.10.0.0/16
+
+containerd_version: 2.2.0
+containerd_arch: amd64
+containerd_os: linux
+containerd_download_url: >-
+  https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-{{ containerd_os }}-{{ containerd_arch }}.tar.gz
+containerd_dest_dir: /usr/local
+containerd_tmp_download_file_path: "{{ ansible_facts['user_dir'] }}/containerd-{{ containerd_version }}-{{ containerd_os }}-{{ containerd_arch }}.tar.gz"
+containerd_systemd_file_url: >-
+  https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+containerd_systemd_file_dest: /etc/systemd/system/containerd.service
+containerd_cni_plugins_version: 1.9.0
+containerd_cni_plugins_arch: amd64
+containerd_cni_download_url: >-
+  https://github.com/containernetworking/plugins/releases/download/v{{ containerd_cni_plugins_version }}/cni-plugins-linux-{{ containerd_cni_plugins_arch}}-v{{ containerd_cni_plugins_version }}.tgz
+containerd_cni_tmp_download_file_path: "{{ ansible_facts['user_dir'] }}/cni-plugins-linux-{{ containerd_cni_plugins_arch}}-{{ containerd_cni_plugins_version }}.tgz"
+containerd_cni_dest_dir: /usr/lib/cni
+runc_version: 1.4.0
+runc_arch: amd64
+runc_download_url: >-
+  https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.{{ runc_arch }}
+runc_tmp_download_file_path: "{{ ansible_facts['user_dir'] }}/runc.{{ runc_arch }}"
+runc_dest: /usr/local/bin/runc

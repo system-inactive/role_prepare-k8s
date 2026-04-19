@@ -1,0 +1,78 @@
+---
+- name: Create temporary download directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.ansible/downloads"
+    state: directory
+    mode: "0755"
+
+- name: Download archive containerd
+  ansible.builtin.get_url:
+    url: "{{ containerd_download_url }}"
+    dest: "{{ containerd_tmp_download_file_path }}"
+    mode: 0644
+    checksum: "{{ containerd_download_checksum | default(omit) }}"
+
+- name: Extract the containerd archive
+  ansible.builtin.unarchive:
+    src: "{{ containerd_tmp_download_file_path }}"
+    dest: "{{ containerd_dest_dir }}"
+    remote_src: yes
+    mode: 0775
+    creates: "{{ containerd_dest_dir }}/bin/containerd"
+
+- name: Download archive with cni plugins
+  ansible.builtin.get_url:
+    url: "{{ containerd_cni_download_url }}"
+    dest: "{{ containerd_cni_tmp_download_file_path }}"
+    mode: 0644
+    checksum: "{{ containerd_cni_download_checksum | default(omit) }}"
+
+- name: Create CNI directory
+  ansible.builtin.file:
+    path: "{{ containerd_cni_dest_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Extract the archive with CNI plugins
+  ansible.builtin.unarchive:
+    src: "{{ containerd_cni_tmp_download_file_path }}"
+    dest: "{{ containerd_cni_dest_dir }}"
+    remote_src: yes
+    mode: 0775
+    creates: "{{ containerd_cni_dest_dir }}/bridge"
+
+- name: Download systemd file for containerd
+  ansible.builtin.get_url:
+    url: "{{ containerd_systemd_file_url }}"
+    dest: "{{ containerd_systemd_file_dest }}"
+    mode: 0644
+  notify:
+    - containerd service
+
+- name: Enable containerd service
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Check containerd service status
+  ansible.builtin.systemd_service:
+    name: containerd
+    enabled: true
+  register: containerd_service_status
+  failed_when: not containerd_service_status.status.ActiveState == "active"
+
+- name: Download archive runc
+  ansible.builtin.get_url:
+    url: "{{ runc_download_url }}"
+    dest: "{{ runc_tmp_download_file_path }}"
+    mode: 0644
+    checksum: "{{ runc_download_checksum | default(omit) }}"
+
+- name: Install runc file
+  ansible.builtin.copy:
+    src: "{{ runc_tmp_download_file_path }}"
+    dest: "{{ runc_dest }}"
+    remote_src: yes
+    mode: 0775

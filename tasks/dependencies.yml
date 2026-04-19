@@ -1,0 +1,31 @@
+---
+- name: "Set k8s_kernel_modules file"
+  ansible.builtin.blockinfile:
+    path: "{{ k8s_modload_d_path }}"
+    block: |
+      {% for mod in k8s_kernel_modules %}
+      {{ mod }}
+      {% endfor %}
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - k8s ROLE"
+    create: true
+  register: modload_file_changed
+
+- name: Reload modules
+  ansible.builtin.systemd_service:
+    name: systemd-modules-load.service
+    state: restarted
+  when: modload_file_changed.changed
+
+- name: "Install packages from distro repo"
+  ansible.builtin.apt:
+    pkg: "{{ k8s_distro_packages_cp }}"
+
+- name: "Set sysctl options"
+  ansible.posix.sysctl:
+    name: "{{ item.option }}"
+    value: "{{ item.value }}"
+    sysctl_file: "{{ k8s_sysctl_file }}"
+    state: present
+    reload: true
+  loop: "{{ k8s_sysctl_options }}"
+  when: k8s_sysctl_options is defined and k8s_sysctl_options | length > 0
